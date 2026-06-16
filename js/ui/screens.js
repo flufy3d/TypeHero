@@ -416,6 +416,7 @@ function renderPlay(lesson, opts = {}) {
     charEls[index]?.scrollIntoView({ block: 'nearest' });
   }
 
+  let failedEarly = false;
   const session = createSession(lesson, {
     onUpdate(snap) {
       renderText(snap.index, snap.lastWrong);
@@ -424,6 +425,15 @@ function renderPlay(lesson, opts = {}) {
       sWpm.textContent = snap.wpm;
       sCombo.textContent = snap.combo;
       prog.style.width = Math.round((snap.index / snap.total) * 100) + '%';
+      // 准确率掉到 50% 以下立刻让重来，不必把整段长文打完才知道没过
+      const attempts = snap.index + snap.errors;
+      if (!failedEarly && snap.index < snap.total && attempts >= 15 && snap.acc < 50) {
+        failedEarly = true;
+        currentKeyHandler = null;
+        keyboard.clear();
+        showEarlyFail(lesson, isArena);
+        return;
+      }
       if (snap.lastWrong) {
         mascot.textContent = '😅';
         setTimeout(() => { if (!session.isDone) mascot.textContent = '🙂'; }, 350);
@@ -475,6 +485,31 @@ function showArena() {
 /* ========================================================= */
 /* 结算                                                       */
 /* ========================================================= */
+/* 中途准确率太低，立刻提示重来（避免把长文白打完） */
+function showEarlyFail(lesson, isArena) {
+  const ov = document.createElement('div');
+  ov.id = 'overlay';
+  ov.className = 'overlay';
+  ov.innerHTML = `
+    <div class="modal">
+      <div style="font-size:3rem">🌀</div>
+      <div class="result-title">${pick(['哎呀，错得有点多啦', '没关系，我们重来一次！', '慢一点，会更准哦'])}</div>
+      <p class="muted" style="margin:6px 0 16px">准确率太低，这一关不会通过。<br>现在重新开始，别浪费时间继续打啦 💪</p>
+      <div class="row">
+        <button class="btn" id="efRetry">🔁 重新开始</button>
+        <button class="btn ghost" id="efHome">🗺️ 返回地图</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  Sound.wrong();
+  ov.querySelector('#efRetry').addEventListener('click', () => {
+    Sound.click();
+    if (isArena) router.go('arena');
+    else router.go('play', { lessonId: lesson.id });
+  });
+  ov.querySelector('#efHome').addEventListener('click', () => { Sound.click(); router.go('home'); });
+}
+
 function showResult(r, lessonId) {
   const passed = r.stars >= 1;
   const titlePool = {
