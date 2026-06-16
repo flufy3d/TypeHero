@@ -16,7 +16,8 @@ export const WORLDS = [
       { id: 'home-4', title: 'A 与 ;', tip: '小指负责 A 和 分号', target: 'aaa ;;; a;a; ;a;a a; ;a a;;a ;aa;', targetWpm: 12 },
       { id: 'home-5', title: 'G 与 H', tip: '食指伸一下：G 给左手，H 给右手', target: 'ggg hhh ghgh hghg gh hg ghhg hggh', targetWpm: 13 },
       { id: 'home-6', title: '中排大混合', tip: '保持手指放在原位哦', target: 'asdf jkl; gh fjdk sla; ghjk asdf jkl;', targetWpm: 14 },
-      { id: 'home-7', title: '中排小单词', tip: '全部用中排手指完成', target: 'as ask dad sad all fall hall lash flask glad', targetWpm: 15 }
+      { id: 'home-7', title: '中排小单词', tip: '全部用中排手指完成', target: 'as ask dad sad all fall hall lash flask glad', targetWpm: 15 },
+      { id: 'home-boss', boss: true, emoji: '🦀', title: '寄居蟹船长', tip: '用中排所有手指打败螃蟹船长！', target: 'a glad lass had a flask; dad asks all sad lads', targetWpm: 16 }
     ]
   },
   {
@@ -27,7 +28,8 @@ export const WORLDS = [
       { id: 'top-2', title: 'T Y U I O P', tip: '右手回家，别忘了原位', target: 'ttt yyy uuu iii ooo ppp type tour', targetWpm: 14 },
       { id: 'top-3', title: '上排连打', tip: '眼睛看屏幕，不看键盘', target: 'we type were tower equip your quiet pretty', targetWpm: 15 },
       { id: 'top-4', title: '上排单词', tip: '一个词一个词来', target: 'tree power write outer rope quote your true', targetWpm: 16 },
-      { id: 'top-5', title: '中+上排', tip: '两排一起用', target: 'the they tea read seat hear rate hate three', targetWpm: 17 }
+      { id: 'top-5', title: '中+上排', tip: '两排一起用', target: 'the they tea read seat hear rate hate three', targetWpm: 17 },
+      { id: 'top-boss', boss: true, emoji: '🦅', title: '高原飞鹰', tip: '中上两排联动，稳住节奏！', target: 'we type quiet poetry, your true power is upper', targetWpm: 18 }
     ]
   },
   {
@@ -38,7 +40,8 @@ export const WORLDS = [
       { id: 'bot-2', title: 'N M 与逗号句号', tip: '右手下排', target: 'nnn mmm man mob nob ban men mind name', targetWpm: 14 },
       { id: 'bot-3', title: '下排连打', tip: '稳稳地敲', target: 'van cab numb mix zoom comb brave clever', targetWpm: 15 },
       { id: 'bot-4', title: '三排大冒险', tip: '中、上、下排都用上', target: 'number combine velvet bronze maze vivid', targetWpm: 16 },
-      { id: 'bot-5', title: '逗号和句号', tip: '逗号用右中指，句号用右无名指', target: 'cats, dogs. run, jump. yes, no. go now.', targetWpm: 16 }
+      { id: 'bot-5', title: '逗号和句号', tip: '逗号用右中指，句号用右无名指', target: 'cats, dogs. run, jump. yes, no. go now.', targetWpm: 16 },
+      { id: 'bot-boss', boss: true, emoji: '🐍', title: '丛林巨蟒', tip: '三排联动，别看键盘！', target: 'brave zebras mixed seven vivid number combos', targetWpm: 18 }
     ]
   },
   {
@@ -49,7 +52,8 @@ export const WORLDS = [
       { id: 'num-2', title: '4 5 6', tip: '4 5 用左食指，6 用右食指', target: '444 555 666 456 654 45 56 46 564', targetWpm: 11 },
       { id: 'num-3', title: '7 8 9 0', tip: '右手：食7、中8、无名9、小指0', target: '777 888 999 000 7890 0987 78 90', targetWpm: 11 },
       { id: 'num-4', title: '数字大混合', tip: '别低头，凭感觉找', target: '1 22 333 4444 90 80 70 60 50 19 28', targetWpm: 12 },
-      { id: 'num-5', title: '数字应用', tip: '字母和数字一起来', target: 'room 101 year 2025 call 911 buy 3 get 1', targetWpm: 14 }
+      { id: 'num-5', title: '数字应用', tip: '字母和数字一起来', target: 'room 101 year 2025 call 911 buy 3 get 1', targetWpm: 14 },
+      { id: 'num-boss', boss: true, emoji: '👾', title: '数字怪兽', tip: '数字和字母交替来！', target: 'call 911 in 2025, room 404 has 28 new toys', targetWpm: 14 }
     ]
   },
   {
@@ -60,7 +64,8 @@ export const WORLDS = [
       { id: 'cap-2', title: '名字与地点', tip: '专有名词都要大写', target: 'Tom Mia Leo Anna China Paris Tokyo', targetWpm: 14 },
       { id: 'cap-3', title: '句子开头大写', tip: '句号结尾，下句再大写', target: 'I am happy. We can play. You are kind.', targetWpm: 15 },
       { id: 'cap-4', title: '问号与叹号', tip: '感叹用 Shift+1，问号在右下', target: 'Wow! Really? Yes! Are you ok? Great job!', targetWpm: 15 },
-      { id: 'cap-5', title: '标点大综合', tip: '注意逗号、撇号和大小写', target: "Hello, friend! How are you? I'm fine, thanks.", targetWpm: 16 }
+      { id: 'cap-5', title: '标点大综合', tip: '注意逗号、撇号和大小写', target: "Hello, friend! How are you? I'm fine, thanks.", targetWpm: 16 },
+      { id: 'cap-boss', boss: true, emoji: '🐲', title: '符号巨龙', tip: '大写、逗号、问号、叹号全都要！', target: "Wow, Tom! Are you ready? Yes, let's go now!", targetWpm: 16 }
     ]
   },
   {
@@ -71,7 +76,8 @@ export const WORLDS = [
       { id: 'wrd-2', title: '高频词 ②', tip: '节奏均匀', target: 'this have from one had word but not what all', targetWpm: 18 },
       { id: 'wrd-3', title: '高频词 ③', tip: '错了不要紧，打对再继续', target: 'were when your can said there use each which', targetWpm: 19 },
       { id: 'wrd-4', title: '高频词 ④', tip: '稳定比快更重要', target: 'she will many about how then them these some', targetWpm: 20 },
-      { id: 'wrd-5', title: '常用短语', tip: '一组一组地打', target: 'in the morning at school with my friends every day', targetWpm: 20 }
+      { id: 'wrd-5', title: '常用短语', tip: '一组一组地打', target: 'in the morning at school with my friends every day', targetWpm: 20 },
+      { id: 'wrd-boss', boss: true, emoji: '🤖', title: '词汇机器人', tip: '高频词连打，冲刺！', target: 'they will use these words about your school every day', targetWpm: 22 }
     ]
   },
   {
@@ -83,7 +89,8 @@ export const WORLDS = [
       { id: 'sen-3', title: '蓝天白云', tip: '保持节奏', target: 'The sun is bright and the sky is blue.', targetWpm: 21 },
       { id: 'sen-4', title: '我的小狗', tip: '别低头看键盘', target: 'My dog can run very fast and jump high.', targetWpm: 22 },
       { id: 'sen-5', title: '读书真好', tip: '一气呵成', target: 'Reading books makes me feel happy and smart.', targetWpm: 22 },
-      { id: 'sen-6', title: '神奇全字母句', tip: '这句话用到了 26 个字母！', target: 'The quick brown fox jumps over the lazy dog.', targetWpm: 23 }
+      { id: 'sen-6', title: '神奇全字母句', tip: '这句话用到了 26 个字母！', target: 'The quick brown fox jumps over the lazy dog.', targetWpm: 23 },
+      { id: 'sen-boss', boss: true, emoji: '🦉', title: '智慧猫头鹰', tip: '完整句子，注意大写和句号', target: 'The wise owl reads many good books under a bright moon.', targetWpm: 24 }
     ]
   },
   {
@@ -94,7 +101,8 @@ export const WORLDS = [
       { id: 'spd-2', title: '飞快的手指', tip: '眼睛盯屏幕', target: 'Fast fingers win the race, so keep your eyes on the screen.', targetWpm: 27 },
       { id: 'spd-3', title: '调皮的斑马', tip: '又一句全字母句', target: 'How vexingly quick daft zebras jump!', targetWpm: 27 },
       { id: 'spd-4', title: '相信你自己', tip: '深呼吸，开始', target: 'Believe in yourself and you can do amazing things.', targetWpm: 28 },
-      { id: 'spd-5', title: '五位魔法师', tip: '最后的全字母句挑战', target: 'The five boxing wizards jump quickly every night.', targetWpm: 28 }
+      { id: 'spd-5', title: '五位魔法师', tip: '最后的全字母句挑战', target: 'The five boxing wizards jump quickly every night.', targetWpm: 28 },
+      { id: 'spd-boss', boss: true, final: true, emoji: '👑', title: '字母之王', tip: '集结所有本领，打败字母之王！', target: 'The quick brown fox and five boxing wizards jump over my lazy dog!', targetWpm: 30 }
     ]
   }
 ];
@@ -155,3 +163,23 @@ export function computeStars(acc, wpm, targetWpm) {
   if (acc >= 90) return 2;
   return 1;
 }
+
+export const BOSS_IDS = ALL_LESSONS.filter((l) => l.boss).map((l) => l.id);
+export function isBoss(id) { const l = getLesson(id); return !!(l && l.boss); }
+
+// 是否通关全部世界（含每个世界的 Boss）—— 用于解锁竞技场
+export function allWorldsComplete(profile) {
+  return WORLDS.every((w) => isWorldComplete(profile, w.id));
+}
+
+// 竞技场题库：通关后反复挑战，每次随机抽一题刷新纪录
+export const ARENA_CHALLENGES = [
+  { title: '全字母句 · 棕狐', target: 'The quick brown fox jumps over the lazy dog.', targetWpm: 32 },
+  { title: '全字母句 · 斑马', target: 'How vexingly quick daft zebras jump!', targetWpm: 32 },
+  { title: '全字母句 · 黑石', target: 'Sphinx of black quartz, judge my vow.', targetWpm: 32 },
+  { title: '全字母句 · 魔法师', target: 'The five boxing wizards jump quickly.', targetWpm: 32 },
+  { title: '冲刺 · 打字英雄', target: 'Practice every day to become a typing hero!', targetWpm: 34 },
+  { title: '冲刺 · 相信自己', target: 'Believe in yourself and you can do amazing things.', targetWpm: 34 },
+  { title: '冲刺 · 飞快手指', target: 'Fast fingers win the race every single time you try.', targetWpm: 34 },
+  { title: '终极 · 字母之王', target: 'The quick brown fox and five boxing wizards jump over my lazy dog!', targetWpm: 36 }
+];

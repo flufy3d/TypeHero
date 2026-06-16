@@ -2,7 +2,7 @@
    游戏化：经验/等级、徽章、解锁主题
    纯逻辑模块——数据由调用方传入，不直接读 localStorage
    ========================================================= */
-import { WORLDS, isWorldComplete } from '../data/lessons.js';
+import { WORLDS, isWorldComplete, ALL_LESSONS } from '../data/lessons.js';
 
 /* ---------- 经验与等级（每级 100 经验） ---------- */
 const XP_PER_LEVEL = 100;
@@ -48,6 +48,12 @@ export const BADGES = [
     check: (c) => c.profile.stats.bestWpm >= 50 },
   { id: 'world1', em: '🏆', name: '通关达人', desc: '完整通关一个世界',
     check: (c) => WORLDS.some((w) => isWorldComplete(c.profile, w.id)) },
+  { id: 'boss1', em: '🗡️', name: '屠龙勇士', desc: '击败第一个 Boss',
+    check: (c) => ALL_LESSONS.some((l) => l.boss && (c.profile.stars[l.id] || 0) >= 1) },
+  { id: 'allboss', em: '👑', name: 'Boss 终结者', desc: '击败全部 Boss',
+    check: (c) => ALL_LESSONS.filter((l) => l.boss).every((l) => (c.profile.stars[l.id] || 0) >= 1) },
+  { id: 'arena', em: '🏟️', name: '竞技场挑战者', desc: '在竞技场完成一次挑战',
+    check: (c) => (c.profile.arena?.runs || 0) >= 1 },
   { id: 'collector', em: '🎨', name: '皮肤收藏家', desc: '解锁一个新主题',
     check: (c) => (c.profile.unlocks.themes || []).length >= 2 },
   { id: 'streak3', em: '📅', name: '坚持三天', desc: '连续 3 天来练习',

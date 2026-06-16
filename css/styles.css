@@ -283,6 +283,106 @@ body.no-hints .key.next { background: var(--card-solid); color: var(--ink); box-
 
 .section-h { font-size: 1.3rem; font-weight: 800; margin: 26px 0 12px; }
 
+/* ========================================================= */
+/* 冒险地图（蜿蜒小路 + Boss + 竞技场）                        */
+/* ========================================================= */
+.map-title { font-size: 1.5rem; font-weight: 900; margin: 6px 0 18px; }
+.map { padding-bottom: 10px; }
+
+.region {
+  position: relative; overflow: hidden;
+  border-radius: 26px; margin-bottom: 22px; padding: 16px 16px 24px;
+  border: 1px solid rgba(255,255,255,.1); border-left: 6px solid var(--wc);
+  background: #161a36;
+}
+.region::before { content: ""; position: absolute; inset: 0; background: var(--wc); opacity: .13; z-index: 0; }
+.region-deco { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.region-deco span { position: absolute; font-size: 30px; opacity: .35; }
+.region-deco .region-water { font-size: 150px; right: -18px; bottom: -46px; opacity: .09; }
+
+.region-head { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.region-emoji { font-size: 30px; }
+.region-name { font-weight: 900; font-size: 1.2rem; }
+.region-prog { margin-left: auto; color: var(--gold); font-weight: 800; background: rgba(0,0,0,.28); padding: 4px 12px; border-radius: 999px; font-size: .9rem; }
+.region.cleared .region-prog { color: var(--good); background: rgba(81,232,153,.22); }
+
+.trail { position: relative; z-index: 1; padding: 30px 0 8px; --off: 96px; }
+.trail::before { content: ""; position: absolute; left: 50%; top: 12px; bottom: 12px; border-left: 5px dashed rgba(255,255,255,.28); transform: translateX(-50%); }
+
+.stop { position: relative; display: flex; justify-content: center; min-height: 108px; align-items: center; }
+.stop-inner { position: relative; display: flex; flex-direction: column; align-items: center; }
+.stop.left .stop-inner  { transform: translateX(calc(var(--off) * -1)); }
+.stop.right .stop-inner { transform: translateX(var(--off)); }
+
+.bubble {
+  width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center;
+  font-weight: 900; font-size: 1.5rem; color: #fff; background: var(--wc);
+  border: 4px solid rgba(255,255,255,.85); box-shadow: 0 8px 18px rgba(0,0,0,.35);
+  cursor: pointer; transition: transform .12s; position: relative;
+}
+.bubble:hover { transform: translateY(-3px) scale(1.06); }
+.bubble.done { box-shadow: 0 0 0 4px rgba(81,232,153,.6), 0 8px 18px rgba(0,0,0,.35); }
+.bubble.locked { background: #363b5e; border-color: rgba(255,255,255,.18); color: var(--muted); font-size: 1.2rem; box-shadow: none; cursor: not-allowed; }
+.bubble.locked:hover { transform: none; }
+/* 连到中间小路的虚线 */
+.stop.left .bubble::after, .stop.right .bubble::after {
+  content: ""; position: absolute; top: 50%; transform: translateY(-50%);
+  width: calc(var(--off) - 36px); border-top: 5px dashed rgba(255,255,255,.28);
+}
+.stop.left .bubble::after { left: 100%; }
+.stop.right .bubble::after { right: 100%; }
+
+.label { font-size: .74rem; margin-top: 8px; text-align: center; max-width: 120px; line-height: 1.15; }
+.stars { font-size: .82rem; margin-top: 2px; }
+
+.pin {
+  position: absolute; top: -46px; left: 50%; transform: translateX(-50%);
+  font-size: 30px; text-align: center; z-index: 3;
+  filter: drop-shadow(0 4px 3px rgba(0,0,0,.4)); animation: pinbounce 1.1s infinite;
+}
+.pin i { display: block; font-style: normal; color: #fff; font-size: 16px; margin-top: -7px; }
+@keyframes pinbounce { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-7px); } }
+
+/* Boss 节点：坐落在小路尽头中央 */
+.stop.boss { justify-content: center; }
+.boss-bubble {
+  width: 108px; height: 108px; border-radius: 30px; display: grid; place-items: center;
+  font-size: 50px; background: linear-gradient(135deg, #ff6b6b, #ffa94d);
+  border: 4px solid var(--gold); cursor: pointer; position: relative; transition: transform .12s;
+  box-shadow: 0 0 26px rgba(255,213,74,.45), 0 10px 22px rgba(0,0,0,.4);
+}
+.boss-bubble:hover { transform: scale(1.05) rotate(-2deg); }
+.boss-bubble.final { background: linear-gradient(135deg, #b14cff, #ff4d8d); }
+.boss-bubble.locked { filter: grayscale(.8) brightness(.55); border-color: rgba(255,255,255,.2); box-shadow: none; cursor: not-allowed; }
+.boss-bubble.locked:hover { transform: none; }
+.boss-tag {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+  background: var(--gold); color: #5a3a00; font-weight: 900; font-size: .62rem;
+  padding: 2px 9px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.3);
+}
+.boss-bubble.final .boss-tag { background: linear-gradient(90deg, #ffd54a, #ff8a3d); }
+
+/* 竞技场 */
+.arena-node {
+  position: relative; margin: 8px auto 40px; max-width: 560px; text-align: center;
+  padding: 24px 22px; border-radius: 26px; border: 2px solid var(--gold); cursor: pointer;
+  background: radial-gradient(120% 120% at 50% 0, #3a2a6b, #1a1d3a);
+  box-shadow: 0 0 28px rgba(255,213,74,.25); transition: transform .12s;
+}
+.arena-node:hover { transform: translateY(-3px); }
+.arena-node.locked { border-color: rgba(255,255,255,.18); background: #1a1d3a; box-shadow: none; opacity: .7; cursor: not-allowed; }
+.arena-node.locked:hover { transform: none; }
+.arena-emoji { font-size: 54px; }
+.arena-title { font-weight: 900; font-size: 1.3rem; margin-top: 4px; }
+.arena-sub { color: var(--muted); font-size: .85rem; margin-top: 6px; }
+
+/* 练习页 Boss / 竞技场 标识 */
+.boss-flag { display: inline-block; vertical-align: middle; margin-left: 4px; background: var(--gold); color: #5a3a00; font-weight: 900; font-size: .62rem; padding: 2px 8px; border-radius: 999px; }
+.boss-flag.final { background: linear-gradient(90deg, #ffd54a, #ff8a3d); }
+.boss-flag.arena { background: #4dd0e1; color: #063; }
+.play-head.boss-head { border: 1px solid var(--gold); box-shadow: 0 0 18px rgba(255,213,74,.22); }
+.play-head.arena-head { border: 1px solid #4dd0e1; }
+
 /* 小屏适配 */
 @media (max-width: 560px) {
   .key { min-width: 30px; height: 42px; font-size: .8rem; border-radius: 9px; }
@@ -290,6 +390,11 @@ body.no-hints .key.next { background: var(--card-solid); color: var(--ink); box-
   .nav .btn span.t { display: none; }
   .stats { flex-wrap: wrap; }
   .hero-sub .xp-track { display: none; }
+  .trail { --off: 64px; }
+  .bubble { width: 60px; height: 60px; font-size: 1.25rem; border-width: 3px; }
+  .boss-bubble { width: 92px; height: 92px; font-size: 42px; }
+  .label { max-width: 92px; font-size: .68rem; }
+  .region-deco .region-water { font-size: 110px; }
 }
 
 /* 减少动画偏好 */

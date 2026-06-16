@@ -3,8 +3,8 @@
    ========================================================= */
 import { Store } from '../state/store.js';
 import {
-  WORLDS, getLesson, worldOf, nextLessonId, isLessonUnlocked,
-  worldStars, worldMaxStars
+  WORLDS, ALL_LESSONS, getLesson, worldOf, nextLessonId, isLessonUnlocked,
+  worldStars, worldMaxStars, allWorldsComplete, ARENA_CHALLENGES
 } from '../data/lessons.js';
 import { createSession } from '../engine/typing.js';
 import { createKeyboard } from '../engine/keyboard.js';
@@ -19,6 +19,19 @@ let currentKeyHandler = null;
 
 const AVATARS = ['🦸', '🦹', '🦊', '🐱', '🐯', '🐲', '🦄', '🐼', '🐧', '🤖', '🐢', '🦉', '🐙', '🦁', '🐵', '🐰'];
 const THEME_DOT = { default: '#6c5ce7', ocean: '#00b4d8', forest: '#2d9d57', candy: '#ff5fa2', sunset: '#ff7b36', cosmos: '#8e7dff' };
+
+// 地图每个世界的主题色与装饰
+const WORLD_COLOR = { home: '#22b8cf', top: '#7048e8', bottom: '#37b24d', num: '#4263eb', caps: '#f06595', words: '#f59f00', sent: '#1098ad', speed: '#e8590c' };
+const SCENERY = {
+  home: ['🌴', '🐚', '⛱️', '🌊'], top: ['🏔️', '☁️', '🦅', '🌤️'],
+  bottom: ['🌿', '🍄', '🐸', '🦎'], num: ['⭐', '🌙', '🪐', '✨'],
+  caps: ['🏰', '⚔️', '👑', '🛡️'], words: ['📚', '✏️', '🧩', '💡'],
+  sent: ['📜', '🖋️', '📖', '📝'], speed: ['⚡', '🔥', '🏁', '💨']
+};
+const SCENERY_POS = [
+  { top: '16%', left: '5%' }, { bottom: '14%', left: '9%' },
+  { top: '20%', right: '8%' }, { bottom: '16%', right: '5%' }
+];
 
 /* ---------- 工具 ---------- */
 function esc(s) {
@@ -167,57 +180,105 @@ function renderCreatePanel() {
 /* ========================================================= */
 function showHome() {
   const p = Store.getActive();
-  const worldsHtml = WORLDS.map((w) => {
+  // 全局"你在这"：第一个已解锁且还没拿星的关卡
+  const current = ALL_LESSONS.find((l) => isLessonUnlocked(p, l.id) && !(p.stars[l.id] > 0));
+  const currentId = current ? current.id : null;
+  const graduated = allWorldsComplete(p);
+  const pinHtml = `<div class="pin">${p.avatar}<i>▾</i></div>`;
+
+  const regions = WORLDS.map((w) => {
     const got = worldStars(p, w.id);
     const max = worldMaxStars(w.id);
-    const nodes = w.lessons.map((l, i) => {
+    const color = WORLD_COLOR[w.id] || '#6c5ce7';
+    const deco = (SCENERY[w.id] || []).map((em, i) => {
+      const style = Object.entries(SCENERY_POS[i] || {}).map(([k, v]) => `${k}:${v}`).join(';');
+      return `<span style="${style}">${em}</span>`;
+    }).join('');
+
+    const stops = w.lessons.map((l, i) => {
       const unlocked = isLessonUnlocked(p, l.id);
       const s = p.stars[l.id] || 0;
+      const here = l.id === currentId ? pinHtml : '';
+      const state = unlocked ? (s > 0 ? 'done' : '') : 'locked';
+      if (l.boss) {
+        return `
+          <div class="stop boss">
+            <div class="stop-inner">
+              ${here}
+              <div class="boss-bubble ${state} ${l.final ? 'final' : ''}" data-lesson="${unlocked ? l.id : ''}">
+                <span class="boss-tag">${l.final ? '终极BOSS' : 'BOSS'}</span>
+                <span class="be">${unlocked ? l.emoji : '🔒'}</span>
+              </div>
+              <div class="label">${esc(l.title)}</div>
+              <div class="stars">${unlocked ? starRow(s) : ''}</div>
+            </div>
+          </div>`;
+      }
       return `
-        <div class="node ${unlocked ? (s > 0 ? 'done' : '') : 'locked'}" data-lesson="${unlocked ? l.id : ''}">
-          ${unlocked ? `
-            <div class="num">${i + 1}</div>
-            <div class="lab">${esc(l.title)}</div>
-            <div class="stars">${starRow(s)}</div>`
-            : `<div class="lock">🔒</div><div class="lab">${esc(l.title)}</div>`}
+        <div class="stop ${i % 2 === 0 ? 'left' : 'right'}">
+          <div class="stop-inner">
+            ${here}
+            <div class="bubble ${state}" data-lesson="${unlocked ? l.id : ''}">${unlocked ? (i + 1) : '🔒'}</div>
+            <div class="label">${esc(l.title)}</div>
+            <div class="stars">${unlocked ? starRow(s) : ''}</div>
+          </div>
         </div>`;
     }).join('');
+
     return `
-      <section class="world card">
-        <div class="world-head">
-          <span class="world-emoji">${w.emoji}</span>
-          <span class="world-name">${esc(w.name)}</span>
-          <span class="world-prog">⭐ ${got}/${max}</span>
+      <section class="region ${got >= max ? 'cleared' : ''}" style="--wc:${color}">
+        <div class="region-deco">${deco}<span class="region-water">${w.emoji}</span></div>
+        <div class="region-head">
+          <span class="region-emoji">${w.emoji}</span>
+          <span class="region-name">${esc(w.name)}</span>
+          <span class="region-prog">⭐ ${got}/${max}</span>
         </div>
-        <p class="tip">${esc(w.intro)}</p>
-        <div class="nodes">${nodes}</div>
+        <div class="trail">${stops}</div>
       </section>`;
   }).join('');
 
-  root.innerHTML = topbar() + `<div>${worldsHtml}</div>`;
+  const arena = `
+    <section class="arena-node ${graduated ? '' : 'locked'}" ${graduated ? 'data-arena="1"' : ''}>
+      ${(!currentId && graduated) ? pinHtml : ''}
+      <div class="arena-emoji">🏟️</div>
+      <div class="arena-title">竞技场 · 无尽挑战</div>
+      <div class="arena-sub">${graduated
+        ? `最佳速度 ${p.arena.bestWpm} WPM · 最佳准确率 ${p.arena.bestAcc}% · 已挑战 ${p.arena.runs} 次`
+        : '🔒 通关所有世界后解锁，可反复刷新纪录'}</div>
+    </section>`;
+
+  root.innerHTML = topbar() + `<h2 class="map-title">🗺️ 冒险地图</h2><div class="map">${regions}${arena}</div>`;
   wireTopbar();
-  root.querySelectorAll('.node[data-lesson]').forEach((n) => {
+  root.querySelectorAll('[data-lesson]').forEach((n) => {
     if (!n.dataset.lesson) return;
     n.addEventListener('click', () => { Sound.click(); router.go('play', { lessonId: n.dataset.lesson }); });
   });
+  root.querySelector('[data-arena]')?.addEventListener('click', () => { Sound.click(); router.go('arena'); });
+
+  // 自动滚动到"你在这"
+  root.querySelector('.pin')?.closest('.stop, .arena-node')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 
 /* ========================================================= */
 /* 练习                                                       */
 /* ========================================================= */
-function showPlay(lessonId) {
-  const p = Store.getActive();
-  const lesson = getLesson(lessonId);
-  if (!lesson || !isLessonUnlocked(p, lessonId)) { router.go('home'); return; }
-  const world = worldOf(lessonId);
+function renderPlay(lesson, opts = {}) {
+  const isArena = !!opts.isArena;
+  const isBossLvl = !!lesson.boss;
+  const world = worldOf(lesson.id);
+  const subtitle = isArena ? '竞技场 · 反复挑战' : (world ? world.name : '');
+  const titleIcon = isArena ? '🏟️' : (isBossLvl ? lesson.emoji : (world ? world.emoji : ''));
+  const tag = isBossLvl
+    ? `<span class="boss-flag ${lesson.final ? 'final' : ''}">${lesson.final ? '终极BOSS' : 'BOSS'}</span>`
+    : (isArena ? `<span class="boss-flag arena">竞技场</span>` : '');
 
   root.innerHTML = `
-    <div class="play-head card" style="padding:12px 16px">
+    <div class="play-head card ${isBossLvl ? 'boss-head' : ''} ${isArena ? 'arena-head' : ''}" style="padding:12px 16px">
       <button class="btn ghost" id="backBtn">← 返回</button>
       <span class="mascot" id="mascot">🙂</span>
       <div>
-        <div class="lesson-title">${world.emoji} ${esc(lesson.title)}</div>
-        <div class="muted" style="font-size:.8rem">${esc(world.name)}</div>
+        <div class="lesson-title">${titleIcon} ${esc(lesson.title)} ${tag}</div>
+        <div class="muted" style="font-size:.8rem">${esc(subtitle)}</div>
       </div>
       <div class="stats">
         <div class="stat"><div class="v" id="sAcc">100</div><div class="k">准确率%</div></div>
@@ -297,8 +358,8 @@ function showPlay(lessonId) {
     onComplete(result) {
       currentKeyHandler = null;
       keyboard.clear();
-      const summary = Store.recordResult(result);
-      showResult(summary, lessonId);
+      if (isArena) showArenaResult(Store.recordArenaResult(result), lesson);
+      else showResult(Store.recordResult(result), lesson.id);
     }
   });
 
@@ -315,6 +376,22 @@ function showPlay(lessonId) {
   };
 
   root.querySelector('#backBtn').addEventListener('click', () => { Sound.click(); router.go('home'); });
+}
+
+function showPlay(lessonId) {
+  const p = Store.getActive();
+  const lesson = getLesson(lessonId);
+  if (!lesson || !isLessonUnlocked(p, lessonId)) { router.go('home'); return; }
+  renderPlay(lesson, {});
+}
+
+function showArena() {
+  if (!allWorldsComplete(Store.getActive())) { router.go('home'); return; }
+  const c = pick(ARENA_CHALLENGES);
+  renderPlay(
+    { id: 'arena', title: c.title, target: c.target, targetWpm: c.targetWpm, tip: '全力以赴，刷新你的纪录！', arena: true },
+    { isArena: true }
+  );
 }
 
 /* ========================================================= */
@@ -368,6 +445,39 @@ function showResult(r, lessonId) {
   ov.querySelector('#rHome').addEventListener('click', () => { Sound.click(); router.go('home'); });
   ov.querySelector('#rNext')?.addEventListener('click', () => { Sound.click(); router.go('play', { lessonId: nextId }); });
   ov.querySelector('#rMap')?.addEventListener('click', () => { Sound.click(); router.go('home'); });
+}
+
+/* 竞技场结算 */
+function showArenaResult(r, lesson) {
+  const chips = [`<span class="chip gold">✨ 经验 +${r.xpGained}</span>`];
+  if (r.isBestWpm) chips.push(`<span class="chip gold">🏁 速度新纪录 ${r.bestWpm} WPM！</span>`);
+  if (r.leveledUp) chips.push(`<span class="chip gold">⬆️ 升到 Lv.${r.level}</span>`);
+  r.newBadges.forEach((b) => chips.push(`<span class="chip">${b.em} 新徽章「${b.name}」</span>`));
+
+  const ov = document.createElement('div');
+  ov.id = 'overlay';
+  ov.className = 'overlay';
+  ov.innerHTML = `
+    <div class="modal">
+      <div style="font-size:3rem">🏟️</div>
+      <div class="result-title">${r.isBestWpm ? '新纪录！太强了！' : '挑战完成！'}</div>
+      <div class="result-grid">
+        <div class="stat"><div class="v">${r.wpm}</div><div class="k">本次 WPM</div></div>
+        <div class="stat"><div class="v">${r.acc}%</div><div class="k">准确率</div></div>
+        <div class="stat"><div class="v">${r.bestWpm}</div><div class="k">最佳 WPM</div></div>
+      </div>
+      <div class="reward">${chips.join('')}</div>
+      <div class="row">
+        <button class="btn" id="aAgain">🔁 再来一题</button>
+        <button class="btn ghost" id="aHome">🗺️ 回地图</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  confetti(r.isBestWpm ? 180 : 100);
+  Sound.star();
+  if (r.leveledUp) setTimeout(() => Sound.levelUp(), 450);
+  ov.querySelector('#aAgain').addEventListener('click', () => { Sound.click(); router.go('arena'); });
+  ov.querySelector('#aHome').addEventListener('click', () => { Sound.click(); router.go('home'); });
 }
 
 /* ========================================================= */
@@ -538,6 +648,7 @@ export const Screens = {
       case 'profiles': showProfiles(); break;
       case 'home': showHome(); break;
       case 'play': showPlay(params.lessonId); break;
+      case 'arena': showArena(); break;
       case 'badges': showBadges(); break;
       case 'settings': showSettings(); break;
       default: showHome();

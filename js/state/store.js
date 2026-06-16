@@ -21,6 +21,7 @@ function load() {
   } catch {
     db = fresh();
   }
+  Object.values(db.profiles).forEach(ensureShape);
   return db;
 }
 
@@ -51,9 +52,29 @@ function newProfile(name, avatar, color) {
     badges: [],         // [badgeId]
     stats: { lessonsCompleted: 0, totalStars: 0, totalChars: 0, totalTimeMs: 0, bestWpm: 0, runs: 0 },
     streak: { count: 0, lastDate: null },
+    arena: { bestWpm: 0, bestAcc: 0, runs: 0 },
     unlocks: { themes: ['default'] },
     settings: { sound: true, kbHints: true, fingerColors: true, theme: 'default' }
   };
+}
+
+// 为老档案补齐新增字段，避免升级后报错
+function ensureShape(p) {
+  if (!p || typeof p !== 'object') return;
+  p.stars ||= {}; p.best ||= {}; p.badges ||= [];
+  p.stats ||= {};
+  const s = p.stats;
+  s.lessonsCompleted ??= 0; s.totalStars ??= 0; s.totalChars ??= 0;
+  s.totalTimeMs ??= 0; s.bestWpm ??= 0; s.runs ??= 0;
+  p.streak ||= { count: 0, lastDate: null };
+  p.arena ||= { bestWpm: 0, bestAcc: 0, runs: 0 };
+  p.unlocks ||= { themes: ['default'] };
+  if (!Array.isArray(p.unlocks.themes)) p.unlocks.themes = ['default'];
+  if (!p.unlocks.themes.includes('default')) p.unlocks.themes.unshift('default');
+  p.settings ||= {};
+  const st = p.settings;
+  st.sound ??= true; st.kbHints ??= true; st.fingerColors ??= true; st.theme ??= 'default';
+  if (typeof p.xp !== 'number') p.xp = 0;
 }
 
 export const Store = {
@@ -156,6 +177,37 @@ export const Store = {
       prevStars, firstClear, isBest,
       xpGained, level: newLevel, leveledUp,
       newBadges, newThemes
+    };
+  },
+
+  /* 竞技场成绩：刷新个人纪录，不影响关卡星标 */
+  recordArenaResult(result) {
+    const p = this.getActive();
+    if (!p) return null;
+    p.arena ||= { bestWpm: 0, bestAcc: 0, runs: 0 };
+    p.arena.runs += 1;
+    const isBestWpm = result.wpm > p.arena.bestWpm;
+    if (isBestWpm) p.arena.bestWpm = result.wpm;
+    if (result.acc > p.arena.bestAcc) p.arena.bestAcc = result.acc;
+
+    p.stats.bestWpm = Math.max(p.stats.bestWpm, result.wpm);
+    p.stats.runs += 1;
+    p.stats.totalChars += result.chars;
+    p.stats.totalTimeMs += result.timeMs;
+
+    const xpGained = result.stars * 6 + 4;
+    const oldLevel = levelForXp(p.xp);
+    p.xp += xpGained;
+    const newLevel = levelForXp(p.xp);
+
+    const newBadges = evaluateBadges(p, result);
+    newBadges.forEach((b) => p.badges.push(b.id));
+
+    persist();
+    return {
+      ...result, isBestWpm,
+      bestWpm: p.arena.bestWpm, bestAcc: p.arena.bestAcc, runs: p.arena.runs,
+      xpGained, level: newLevel, leveledUp: newLevel > oldLevel, newBadges
     };
   },
 
