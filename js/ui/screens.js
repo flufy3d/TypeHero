@@ -422,6 +422,7 @@ function renderPlay(lesson, opts = {}) {
       renderText(snap.index, snap.lastWrong);
       keyboard.highlightNext(snap.expected);
       sAcc.textContent = snap.acc;
+      sAcc.style.color = snap.acc < 50 ? 'var(--bad)' : '';
       sWpm.textContent = snap.wpm;
       sCombo.textContent = snap.combo;
       prog.style.width = Math.round((snap.index / snap.total) * 100) + '%';

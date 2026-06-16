@@ -8,10 +8,18 @@ import { initFx } from './ui/effects.js';
 
 // 离线支持：注册 Service Worker（相对路径，兼容 /TypeHero/ 子目录）
 if ('serviceWorker' in navigator) {
+  // 发现新版本并接管后自动刷新一次，避免旧缓存让更新看不到
+  const hadController = !!navigator.serviceWorker.controller;
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing || !hadController) return; // 首次安装不刷新，只有更新换代才刷新
+    refreshing = true;
+    window.location.reload();
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch((err) => {
-      console.warn('Service Worker 注册失败（仍可在线使用）：', err);
-    });
+    navigator.serviceWorker.register('./sw.js')
+      .then((reg) => { reg.update(); })
+      .catch((err) => console.warn('Service Worker 注册失败（仍可在线使用）：', err));
   });
 }
 

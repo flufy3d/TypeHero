@@ -1,6 +1,6 @@
 /* 打字英雄 Service Worker —— 预缓存全部资源，离线可用（cache-first）。
    每次发布如改了文件，把 CACHE 版本号 +1 即可让旧缓存失效。 */
-const CACHE = 'typehero-v4';
+const CACHE = 'typehero-v5';
 
 // 注意：URL 相对于本文件所在目录（仓库根），在 /TypeHero/ 子路径下也能正确解析。
 const ASSETS = [
