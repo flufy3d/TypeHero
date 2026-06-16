@@ -1,0 +1,21 @@
+{
+  "name": "打字英雄 · TypeHero",
+  "short_name": "打字英雄",
+  "lang": "zh-CN",
+  "description": "儿童英文打字练习 —— 中文界面，英文 QWERTY 指法，离线可用。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f1226",
+  "theme_color": "#6c5ce7",
+  "categories": ["education", "kids", "games"],
+  "icons": [
+    {
+      "src": "./assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

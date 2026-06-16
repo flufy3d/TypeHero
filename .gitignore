@@ -1,0 +1,7 @@
+# 开发用临时文件
+_serve.mjs
+_smoke.mjs
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
