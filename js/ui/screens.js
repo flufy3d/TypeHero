@@ -4,7 +4,7 @@
 import { Store } from '../state/store.js';
 import {
   WORLDS, ALL_LESSONS, getLesson, worldOf, nextLessonId, isLessonUnlocked,
-  worldStars, worldMaxStars, allWorldsComplete, ARENA_CHALLENGES
+  worldStars, worldMaxStars, isWorldComplete, allWorldsComplete, ARENA_CHALLENGES
 } from '../data/lessons.js';
 import { createSession } from '../engine/typing.js';
 import { createKeyboard } from '../engine/keyboard.js';
@@ -16,6 +16,7 @@ import { confetti, Sound } from './effects.js';
 let root = null;
 let router = null;
 let currentKeyHandler = null;
+let mapPage = null; // 当前正在查看的世界页（null=自动定位到所在世界）
 
 const AVATARS = ['🦸', '🦹', '🦊', '🐱', '🐯', '🐲', '🦄', '🐼', '🐧', '🤖', '🐢', '🦉', '🐙', '🦁', '🐵', '🐰'];
 const THEME_DOT = { default: '#6c5ce7', ocean: '#00b4d8', forest: '#2d9d57', candy: '#ff5fa2', sunset: '#ff7b36', cosmos: '#8e7dff' };
@@ -53,6 +54,45 @@ function applyChrome() {
 
 function removeOverlay() {
   document.getElementById('overlay')?.remove();
+}
+
+// 可爱的小提示条（替代 alert）
+function toast(msg) {
+  document.querySelector('.toast')?.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2400);
+}
+
+// 需要重新输入名字才能确认的可爱弹窗（替代 confirm，防止误删）
+function confirmName(name, { title, body, confirmText = '确认', emoji = '🥺' }, onConfirm) {
+  removeOverlay();
+  const ov = document.createElement('div');
+  ov.id = 'overlay';
+  ov.className = 'overlay';
+  ov.innerHTML = `
+    <div class="modal confirm-modal">
+      <div style="font-size:3rem">${emoji}</div>
+      <div class="result-title" style="font-size:1.3rem">${esc(title)}</div>
+      <p class="muted" style="margin:6px 0 14px">${body}</p>
+      <input class="field" id="cfInput" autocomplete="off" placeholder="在这里输入：${esc(name)}" />
+      <div class="row">
+        <button class="btn ghost" id="cfCancel">取消</button>
+        <button class="btn danger" id="cfOk" disabled>${confirmText}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  const input = ov.querySelector('#cfInput');
+  const okBtn = ov.querySelector('#cfOk');
+  setTimeout(() => input.focus(), 30);
+  const match = () => input.value.trim() === name;
+  input.addEventListener('input', () => { okBtn.disabled = !match(); });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && match()) okBtn.click(); });
+  ov.querySelector('#cfCancel').addEventListener('click', () => { Sound.click(); removeOverlay(); });
+  okBtn.addEventListener('click', () => { if (!match()) return; removeOverlay(); onConfirm(); });
 }
 
 /* ---------- 顶部英雄栏 ---------- */
@@ -119,17 +159,27 @@ function showProfiles() {
       if (e.target.closest('[data-del]')) return;
       Sound.click();
       Store.setActive(c.dataset.id);
+      mapPage = null;
       applyChrome();
       router.go('home');
     });
   });
   root.querySelectorAll('[data-del]').forEach((b) => {
-    b.addEventListener('click', () => {
-      const p = Store.listProfiles().find((x) => x.id === b.dataset.del);
-      if (confirm(`确定删除「${p?.name}」吗？该英雄的进度会被清除，且无法恢复。`)) {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const prof = Store.listProfiles().find((x) => x.id === b.dataset.del);
+      if (!prof) return;
+      Sound.click();
+      confirmName(prof.name, {
+        title: '要删除这个英雄吗？',
+        body: `删除后「${esc(prof.name)}」的所有进度都会消失，无法恢复。<br>请输入该英雄的名字来确认：`,
+        confirmText: '🗑️ 确认删除',
+        emoji: '🥺'
+      }, () => {
         Store.deleteProfile(b.dataset.del);
+        toast('已删除该英雄');
         showProfiles();
-      }
+      });
     });
   });
   root.querySelector('#addProfile').addEventListener('click', renderCreatePanel);
@@ -168,6 +218,7 @@ function renderCreatePanel() {
   panel.querySelector('#createBtn').addEventListener('click', () => {
     const name = nameInput.value.trim() || '小英雄';
     Store.createProfile(name, avatar, 'default');
+    mapPage = null;
     applyChrome();
     Sound.levelUp();
     router.go('home');
@@ -186,7 +237,7 @@ function showHome() {
   const graduated = allWorldsComplete(p);
   const pinHtml = `<div class="pin">${p.avatar}<i>▾</i></div>`;
 
-  const regions = WORLDS.map((w) => {
+  function regionSection(w) {
     const got = worldStars(p, w.id);
     const max = worldMaxStars(w.id);
     const color = WORLD_COLOR[w.id] || '#6c5ce7';
@@ -235,27 +286,54 @@ function showHome() {
         </div>
         <div class="trail">${stops}</div>
       </section>`;
-  }).join('');
+  }
 
-  const arena = `
-    <section class="arena-node ${graduated ? '' : 'locked'}" ${graduated ? 'data-arena="1"' : ''}>
-      ${(!currentId && graduated) ? pinHtml : ''}
-      <div class="arena-emoji">🏟️</div>
-      <div class="arena-title">竞技场 · 无尽挑战</div>
-      <div class="arena-sub">${graduated
-        ? `最佳速度 ${p.arena.bestWpm} WPM · 最佳准确率 ${p.arena.bestAcc}% · 已挑战 ${p.arena.runs} 次`
-        : '🔒 通关所有世界后解锁，可反复刷新纪录'}</div>
-    </section>`;
+  function arenaSection() {
+    return `
+      <section class="arena-node" data-arena="1">
+        ${!currentId ? pinHtml : ''}
+        <div class="arena-emoji">🏟️</div>
+        <div class="arena-title">竞技场 · 无尽挑战</div>
+        <div class="arena-sub">最佳速度 ${p.arena.bestWpm} WPM · 最佳准确率 ${p.arena.bestAcc}% · 已挑战 ${p.arena.runs} 次</div>
+      </section>`;
+  }
 
-  root.innerHTML = topbar() + `<h2 class="map-title">🗺️ 冒险地图</h2><div class="map">${regions}${arena}</div>`;
+  // 分页：一次只看一个世界；未通关当前世界就看不到后面的世界
+  let firstIncomplete = WORLDS.findIndex((w) => !isWorldComplete(p, w.id));
+  if (firstIncomplete === -1) firstIncomplete = WORLDS.length - 1;
+  const maxPage = graduated ? WORLDS.length : firstIncomplete; // 竞技场页 = WORLDS.length
+  if (mapPage === null) mapPage = currentId ? WORLDS.findIndex((w) => w.id === worldOf(currentId).id) : firstIncomplete;
+  mapPage = Math.max(0, Math.min(mapPage, maxPage));
+
+  const isArenaPage = mapPage === WORLDS.length;
+  const canNext = mapPage < maxPage;
+  const nextLocked = !canNext && !isArenaPage;   // 停在最后可见世界，后面被锁
+  const nextDisabled = !canNext && isArenaPage;  // 已在竞技场，没有更后面
+
+  const title = isArenaPage ? '🏟️ 竞技场' : `世界 ${mapPage + 1} / ${WORLDS.length} · ${esc(WORLDS[mapPage].name)}`;
+  const page = isArenaPage ? arenaSection() : regionSection(WORLDS[mapPage]);
+
+  const nav = `
+    <div class="world-nav">
+      <button class="nav-arrow" id="prevWorld" ${mapPage > 0 ? '' : 'disabled'} aria-label="上一个世界">◀</button>
+      <div class="world-nav-title">${title}</div>
+      <button class="nav-arrow ${nextLocked ? 'locked' : ''}" id="nextWorld" ${nextDisabled ? 'disabled' : ''} aria-label="下一个世界">${nextLocked ? '🔒' : '▶'}</button>
+    </div>
+    ${nextLocked ? `<p class="next-hint">🔒 通关本世界（含 Boss）后，才能进入下一个世界</p>` : ''}`;
+
+  root.innerHTML = topbar() + `<h2 class="map-title">🗺️ 冒险地图</h2>` + nav + `<div class="map">${page}</div>`;
   wireTopbar();
   root.querySelectorAll('[data-lesson]').forEach((n) => {
     if (!n.dataset.lesson) return;
     n.addEventListener('click', () => { Sound.click(); router.go('play', { lessonId: n.dataset.lesson }); });
   });
   root.querySelector('[data-arena]')?.addEventListener('click', () => { Sound.click(); router.go('arena'); });
+  root.querySelector('#prevWorld')?.addEventListener('click', () => { if (mapPage > 0) { mapPage--; Sound.click(); showHome(); } });
+  root.querySelector('#nextWorld')?.addEventListener('click', () => {
+    if (canNext) { mapPage++; Sound.click(); showHome(); }
+    else if (nextLocked) { Sound.wrong(); toast('先通关本世界（含 Boss）才能解锁下一个世界哦～'); }
+  });
 
-  // 自动滚动到"你在这"
   root.querySelector('.pin')?.closest('.stop, .arena-node')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 
@@ -398,31 +476,40 @@ function showArena() {
 /* 结算                                                       */
 /* ========================================================= */
 function showResult(r, lessonId) {
+  const passed = r.stars >= 1;
   const titlePool = {
-    3: ['太棒了！', '完美表现！', '你是打字小英雄！'],
+    0: ['哎呀，准确率太低啦', '别灰心，再试一次！', '慢一点，打准了再继续～'],
+    1: ['完成啦！', '再练一次会更棒～', '慢慢来，你可以的！'],
     2: ['做得很好！', '越来越熟练啦！', '继续加油！'],
-    1: ['完成啦！', '再练一次会更棒～', '慢慢来，你可以的！']
+    3: ['太棒了！', '完美表现！', '你是打字小英雄！']
   };
   const chips = [];
-  chips.push(`<span class="chip gold">✨ 经验 +${r.xpGained}</span>`);
-  if (r.isBest) chips.push(`<span class="chip gold">🏁 新纪录！</span>`);
-  if (r.leveledUp) chips.push(`<span class="chip gold">⬆️ 升到 Lv.${r.level}</span>`);
-  r.newBadges.forEach((b) => chips.push(`<span class="chip">${b.em} 新徽章「${b.name}」</span>`));
-  r.newThemes.forEach((t) => chips.push(`<span class="chip">${t.em} 解锁主题「${t.name}」</span>`));
+  if (passed) {
+    chips.push(`<span class="chip gold">✨ 经验 +${r.xpGained}</span>`);
+    if (r.isBest) chips.push(`<span class="chip gold">🏁 新纪录！</span>`);
+    if (r.leveledUp) chips.push(`<span class="chip gold">⬆️ 升到 Lv.${r.level}</span>`);
+    r.newBadges.forEach((b) => chips.push(`<span class="chip">${b.em} 新徽章「${b.name}」</span>`));
+    r.newThemes.forEach((t) => chips.push(`<span class="chip">${t.em} 解锁主题「${t.name}」</span>`));
+  } else {
+    chips.push(`<span class="chip warn">准确率只有 ${r.acc}%，要 ≥ 50% 才能过关</span>`);
+  }
 
   const nextId = nextLessonId(lessonId);
+  const showNext = passed && nextId;
 
   const ov = document.createElement('div');
   ov.id = 'overlay';
   ov.className = 'overlay';
   ov.innerHTML = `
     <div class="modal">
+      ${passed ? '' : '<div style="font-size:2.6rem">😟</div>'}
       <div class="result-stars">
         <span class="s ${r.stars >= 1 ? 'on' : ''}">★</span>
         <span class="s ${r.stars >= 2 ? 'on' : ''}">★</span>
         <span class="s ${r.stars >= 3 ? 'on' : ''}">★</span>
       </div>
-      <div class="result-title">${pick(titlePool[r.stars])}</div>
+      <div class="result-title">${pick(titlePool[r.stars] || titlePool[1])}</div>
+      ${passed ? '' : '<p class="muted" style="margin-top:-6px">本关未通过，多练几次一定行！</p>'}
       <div class="result-grid">
         <div class="stat"><div class="v">${r.wpm}</div><div class="k">速度 WPM</div></div>
         <div class="stat"><div class="v">${r.acc}%</div><div class="k">准确率</div></div>
@@ -430,21 +517,24 @@ function showResult(r, lessonId) {
       </div>
       <div class="reward">${chips.join('')}</div>
       <div class="row">
-        <button class="btn ghost" id="rRetry">🔁 再来一次</button>
-        ${nextId ? `<button class="btn" id="rNext">➡️ 下一关</button>` : `<button class="btn" id="rMap">🗺️ 回地图</button>`}
+        <button class="btn ${passed ? 'ghost' : ''}" id="rRetry">🔁 再试一次</button>
+        ${showNext ? `<button class="btn" id="rNext">➡️ 下一关</button>` : ''}
       </div>
       <div class="row"><button class="btn ghost" id="rHome" style="font-size:.85rem">🗺️ 返回地图</button></div>
     </div>`;
   document.body.appendChild(ov);
 
-  confetti(r.stars >= 3 ? 180 : 110);
-  Sound.star();
-  if (r.leveledUp) setTimeout(() => Sound.levelUp(), 450);
+  if (passed) {
+    confetti(r.stars >= 3 ? 180 : 110);
+    Sound.star();
+    if (r.leveledUp) setTimeout(() => Sound.levelUp(), 450);
+  } else {
+    Sound.wrong();
+  }
 
   ov.querySelector('#rRetry').addEventListener('click', () => { Sound.click(); router.go('play', { lessonId }); });
   ov.querySelector('#rHome').addEventListener('click', () => { Sound.click(); router.go('home'); });
   ov.querySelector('#rNext')?.addEventListener('click', () => { Sound.click(); router.go('play', { lessonId: nextId }); });
-  ov.querySelector('#rMap')?.addEventListener('click', () => { Sound.click(); router.go('home'); });
 }
 
 /* 竞技场结算 */
@@ -598,11 +688,12 @@ function showSettings() {
       reader.onload = () => {
         try {
           Store.importProfile(reader.result);
+          mapPage = null;
           applyChrome();
-          alert('导入成功！已切换到导入的英雄。');
+          toast('导入成功！已切换到导入的英雄');
           router.go('home');
         } catch (e) {
-          alert('导入失败：' + e.message);
+          toast('导入失败：' + e.message);
         }
       };
       reader.readAsText(file);
@@ -612,16 +703,26 @@ function showSettings() {
 
   // 重置
   root.querySelector('#resetBtn').addEventListener('click', () => {
-    if (!confirm('确定要清空这个英雄的所有进度吗？（昵称和头像会保留）')) return;
-    Store.update((pr) => {
-      pr.xp = 0; pr.stars = {}; pr.best = {}; pr.badges = [];
-      pr.stats = { lessonsCompleted: 0, totalStars: 0, totalChars: 0, totalTimeMs: 0, bestWpm: 0, runs: 0 };
-      pr.streak = { count: 0, lastDate: null };
-      pr.unlocks = { themes: ['default'] };
-      pr.settings.theme = 'default';
+    Sound.click();
+    confirmName(p.name, {
+      title: '重置这个英雄的进度？',
+      body: `「${esc(p.name)}」的星标、徽章、等级都会清零（昵称和头像保留）。<br>请输入该英雄的名字来确认：`,
+      confirmText: '♻️ 确认重置',
+      emoji: '😮'
+    }, () => {
+      Store.update((pr) => {
+        pr.xp = 0; pr.stars = {}; pr.best = {}; pr.badges = [];
+        pr.stats = { lessonsCompleted: 0, totalStars: 0, totalChars: 0, totalTimeMs: 0, bestWpm: 0, runs: 0 };
+        pr.streak = { count: 0, lastDate: null };
+        pr.arena = { bestWpm: 0, bestAcc: 0, runs: 0 };
+        pr.unlocks = { themes: ['default'] };
+        pr.settings.theme = 'default';
+      });
+      mapPage = null;
+      applyChrome();
+      toast('进度已重置');
+      showSettings();
     });
-    applyChrome();
-    showSettings();
   });
 }
 

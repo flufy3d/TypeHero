@@ -107,6 +107,14 @@ export const WORLDS = [
   }
 ];
 
+// 把每个关卡的练习内容重复若干次，延长练习时间、巩固肌肉记忆
+const LESSON_REPEAT = 4;
+for (const w of WORLDS) {
+  for (const l of w.lessons) {
+    l.target = Array.from({ length: LESSON_REPEAT }, () => l.target).join(' ');
+  }
+}
+
 /* ---------- 派生与辅助 ---------- */
 
 // 按世界顺序展平的关卡列表（决定解锁顺序）
@@ -157,8 +165,9 @@ export function isWorldComplete(profile, worldId) {
   return !!w && w.lessons.every((l) => (profile.stars?.[l.id] || 0) >= 1);
 }
 
-// 评星：完成=1 星；准确率≥90%=2 星；准确率≥97% 且达到速度门槛=3 星
+// 评星：准确率<50% 不过关(0 星)；完成=1 星；≥90%=2 星；≥97% 且达速度门槛=3 星
 export function computeStars(acc, wpm, targetWpm) {
+  if (acc < 50) return 0;
   if (acc >= 97 && wpm >= targetWpm) return 3;
   if (acc >= 90) return 2;
   return 1;

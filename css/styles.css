@@ -376,6 +376,35 @@ body.no-hints .key.next { background: var(--card-solid); color: var(--ink); box-
 .arena-title { font-weight: 900; font-size: 1.3rem; margin-top: 4px; }
 .arena-sub { color: var(--muted); font-size: .85rem; margin-top: 6px; }
 
+/* 世界翻页导航 */
+.world-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.nav-arrow {
+  width: 52px; height: 52px; flex: none; border: none; border-radius: 50%;
+  font-size: 1.3rem; font-weight: 900; color: #fff; cursor: pointer;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: var(--shadow); transition: transform .12s;
+}
+.nav-arrow:hover:not(:disabled) { transform: scale(1.08); }
+.nav-arrow:active:not(:disabled) { transform: scale(.94); }
+.nav-arrow:disabled { opacity: .3; cursor: not-allowed; }
+.nav-arrow.locked { background: #3a3f63; }
+.world-nav-title { flex: 1; text-align: center; font-weight: 900; font-size: 1.15rem; }
+.next-hint { text-align: center; color: var(--muted); font-size: .82rem; margin: -4px 0 12px; }
+
+/* 小提示条 */
+.toast {
+  position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(20px);
+  background: #20254d; color: #fff; padding: 12px 20px; border-radius: 14px; font-weight: 700;
+  box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,.15); z-index: 60;
+  opacity: 0; transition: opacity .25s, transform .25s; max-width: 86vw; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* 危险按钮 / 确认弹窗 / 警告标签 */
+.btn.danger { background: linear-gradient(135deg, #ff6b6b, #ff8787); }
+.confirm-modal .field { margin: 4px 0 16px; text-align: center; }
+.chip.warn { background: rgba(255,107,129,.18); color: #ffb3bd; border: 1px solid rgba(255,107,129,.4); }
+
 /* 练习页 Boss / 竞技场 标识 */
 .boss-flag { display: inline-block; vertical-align: middle; margin-left: 4px; background: var(--gold); color: #5a3a00; font-weight: 900; font-size: .62rem; padding: 2px 8px; border-radius: 999px; }
 .boss-flag.final { background: linear-gradient(90deg, #ffd54a, #ff8a3d); }

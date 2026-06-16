@@ -127,7 +127,7 @@ export const Store = {
     if (!p) return null;
 
     const prevStars = p.stars[result.lessonId] || 0;
-    const firstClear = prevStars === 0;
+    const firstClear = prevStars === 0 && result.stars >= 1;
 
     // 星标取历史最佳，并把提升量计入累计星数
     if (result.stars > prevStars) {
